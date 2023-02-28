@@ -1,1 +1,1 @@
-# Unity-WebRTC-WebGL-Plugin
+# UnityWebRTC_WebGL_Sample_Project
