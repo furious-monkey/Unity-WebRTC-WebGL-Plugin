@@ -42,6 +42,7 @@ public class CameraShow : MonoBehaviour
         callButton.interactable = false;
         hangUpButton.interactable = true;
 
+        init("dat");
     }
 
     private void HangUp()
@@ -59,18 +60,6 @@ public class CameraShow : MonoBehaviour
 
     #if UNITY_WEBGL
         [DllImport("__Internal")]
-        private static extern void onLocalTracks();
-        [DllImport("__Internal")]
-        private static extern void onRemoteTrack();
-        [DllImport("__Internal")]
-        private static extern void onConferenceJoined();
-        [DllImport("__Internal")]
-        private static extern void onUserLeft(int id);
-        [DllImport("__Internal")]
-        private static extern void onConnectionSuccess();
-        [DllImport("__Internal")]
-        private static extern void unload();
-        [DllImport("__Internal")]
-        private static extern void connect();
+        private static extern void init(string data);
     #endif
 }
