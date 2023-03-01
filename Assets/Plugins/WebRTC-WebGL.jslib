@@ -2,11 +2,7 @@ var BingewaveConnector = {
 
 	// Instance stores a reference to the Singleton
 	$globalVariables: {
-		instance: null,
-		page_view_id: null,
-		deepest_scroll: 0,
-		endpoint: 'https://bw.bingewave.com/',
-		token: null,
+		token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiaW5nZXdhdmUtd2VicnRjIiwiaXNzIjoiYmluZ2V3YXZlLXdlYnJ0YyIsInN1YiI6Im1lZXQuYmluZ2V3YXZlLmNvbSIsInJvb20iOiIqIn0.NUvbPsKW9ahAyeTVMVEIGWrhLoPH8UJfRCvUbWhi5u0",
 		frames: [],
 		sessionData: {}
 	},
@@ -64,6 +60,35 @@ var BingewaveConnector = {
 
 	},
 
+	$displayWebRTC: function (widget, id, elementID) {
+
+		elementID = id + ':' + Math.floor((Math.random() * 100) + 1);
+
+		var url = "https://widgets.bingewave.com/webrtc/" + id + "?elementid=" + elementID;
+
+		var ifrm = document.createElement("IFRAME");
+		ifrm.setAttribute("allowfullscreen", "true");
+		ifrm.setAttribute("webkitallowfullscreen", "true");
+		ifrm.setAttribute("mozallowfullscreen", "true");
+		ifrm.setAttribute("allow", "camera *;microphone *");
+		ifrm.setAttribute("width", "100%");
+		renderIframe(widget, id, ifrm, elementID, 0, url);
+	},
+
+	$parseTags: function () {
+		//Get bw:widget elements
+		var elements = document.getElementsByTagName("bw:widget");
+
+		for (var i = 0; i < elements.length; i++) {
+			var widget = elements[i];
+			var id = widget.getAttribute("id");
+
+			var object_id = widget.getAttribute("oid");
+			displayWebRTC(widget, id, object_id);
+
+		}//end for
+	},
+
 	$refreshPage: function () {
 		location.reload();
 	},
@@ -119,6 +144,75 @@ var BingewaveConnector = {
 		}
 	},
 
+	$renderIframe: function (widget, id, ifrm, elementID, defaultHeight, url) {
+
+		var type = widget.getAttribute("type");
+		var environment = widget.getAttribute("env");
+		var uniqueTypeID = id + '-' + type + '-iframe';
+
+		if (environment) {
+			url = updateQueryStringParameter(url, 'env', environment)
+		}
+
+		var frameExist = document.getElementById(uniqueTypeID);
+
+		if (!frameExist) {
+			if (globalVariables.token) {
+				var xhr = new XMLHttpRequest();
+
+				xhr.open('GET', url);
+				xhr.onreadystatechange = function () {
+					if (this.readyState === this.DONE) {
+						if (this.status === 200) {
+								var data_url = URL.createObjectURL(this.response);
+								ifrm.setAttribute("src", data_url);
+						} else {
+							console.log(type);
+							console.log(url);
+							console.error('Unable To Set IFrame SRC');
+						}
+					}
+				};
+
+				xhr.responseType = 'blob';
+				xhr.setRequestHeader('Authorization', globalVariables.token);
+				xhr.send();
+
+			} else {
+				console.log("Token Not Exist");
+				ifrm.setAttribute("src", url);
+			}
+			ifrm.style.width = "100%";
+
+			if (defaultHeight) {
+				ifrm.style.height = defaultHeight + "px";
+			}
+
+			ifrm.scrolling = "no";
+			ifrm.frameBorder = 0;
+			ifrm.setAttribute("onload", "scroll(0,0)");
+			ifrm.id = elementID;
+			var placeholderFrame = document.createElement('span');
+			placeholderFrame.id = uniqueTypeID;
+
+			widget.appendChild(ifrm);
+			widget.appendChild(placeholderFrame);
+
+			globalVariables.frames.push(ifrm);
+		}
+	},
+
+	$updateQueryStringParameter: function (uri, key, value) {
+		var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+		var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+		if (uri.match(re)) {
+			return uri.replace(re, '$1' + key + "=" + value + '$2');
+		}
+		else {
+			return uri + separator + key + "=" + value;
+		}
+	},
+
 	init: function (data) {
 
 		if (typeof data === 'object' && data !== null) {
@@ -140,7 +234,7 @@ var BingewaveConnector = {
 		windowReady(function () {
 			initCookie();
 			parseTagsOnLoad();
-			//parseTags();
+			parseTags();
 		});
 	},
 
@@ -154,7 +248,7 @@ autoAddDeps(BingewaveConnector, '$refreshPage');
 autoAddDeps(BingewaveConnector, '$setCookie');
 autoAddDeps(BingewaveConnector, '$getCookie');
 // autoAddDeps(BingewaveConnector, '$switchModals');
-// autoAddDeps(BingewaveConnector, '$parseTags');
+autoAddDeps(BingewaveConnector, '$parseTags');
 autoAddDeps(BingewaveConnector, '$parseTagsOnLoad');
 autoAddDeps(BingewaveConnector, '$listenIframe');
 // autoAddDeps(BingewaveConnector, '$displayAd');
@@ -168,7 +262,7 @@ autoAddDeps(BingewaveConnector, '$listenIframe');
 // autoAddDeps(BingewaveConnector, '$displayEventTicket');
 // autoAddDeps(BingewaveConnector, '$displayChat');
 // autoAddDeps(BingewaveConnector, '$displayOnlineUsers');
-// autoAddDeps(BingewaveConnector, '$displayWebRTC');
+autoAddDeps(BingewaveConnector, '$displayWebRTC');
 // autoAddDeps(BingewaveConnector, '$displayWebRtcClassroom');
 // autoAddDeps(BingewaveConnector, '$displayNotepad');
 // autoAddDeps(BingewaveConnector, '$displayEventJoin');
@@ -189,7 +283,7 @@ autoAddDeps(BingewaveConnector, '$listenIframe');
 // autoAddDeps(BingewaveConnector, '$displayCollaborationFrame');
 // autoAddDeps(BingewaveConnector, '$displayVideosPlayList');
 // autoAddDeps(BingewaveConnector, '$displayPodcast');
-// autoAddDeps(BingewaveConnector, '$renderIframe');
+autoAddDeps(BingewaveConnector, '$renderIframe');
 autoAddDeps(BingewaveConnector, '$windowReady');
-// autoAddDeps(BingewaveConnector, '$updateQueryStringParameter');
+autoAddDeps(BingewaveConnector, '$updateQueryStringParameter');
 mergeInto(LibraryManager.library, BingewaveConnector);
