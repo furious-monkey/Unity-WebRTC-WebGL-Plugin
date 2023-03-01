@@ -1,289 +1,248 @@
 var BingewaveConnector = {
+  // Instance stores a reference to the Singleton
+  $globalVariables: {
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiaW5nZXdhdmUtd2VicnRjIiwiaXNzIjoiYmluZ2V3YXZlLXdlYnJ0YyIsInN1YiI6Im1lZXQuYmluZ2V3YXZlLmNvbSIsInJvb20iOiIqIn0.NUvbPsKW9ahAyeTVMVEIGWrhLoPH8UJfRCvUbWhi5u0",
+    frames: [],
+    sessionData: {},
+  },
 
-	// Instance stores a reference to the Singleton
-	$globalVariables: {
-		token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiaW5nZXdhdmUtd2VicnRjIiwiaXNzIjoiYmluZ2V3YXZlLXdlYnJ0YyIsInN1YiI6Im1lZXQuYmluZ2V3YXZlLmNvbSIsInJvb20iOiIqIn0.NUvbPsKW9ahAyeTVMVEIGWrhLoPH8UJfRCvUbWhi5u0",
-		frames: [],
-		sessionData: {}
-	},
+  $initCookie: function () {
+    var cookieImage = document.createElement("img");
+    cookieImage.src = "https://widgets.bingewave.com/cookie";
+    cookieImage.setAttribute("style", "display : none;");
+    document.body.appendChild(cookieImage);
+    var cookieTag = document.createElement("input");
+    cookieTag.setAttribute("style", "display : none;");
+    cookieTag.setAttribute("type", "hidden");
+    cookieTag.setAttribute("name", "bw_xdomain_cookie");
+    cookieTag.setAttribute("value", "value_you_want");
+  },
 
-	$initCookie: function () {
-		var cookieImage = document.createElement("img");
-		cookieImage.src = "https://widgets.bingewave.com/cookie";
-		cookieImage.setAttribute("style", "display : none;");
-		document.body.appendChild(cookieImage);
-		var cookieTag = document.createElement("input");
-		cookieTag.setAttribute("style", "display : none;");
-		cookieTag.setAttribute("type", "hidden");
-		cookieTag.setAttribute("name", "bw_xdomain_cookie");
-		cookieTag.setAttribute("value", "value_you_want");
-	},
+  $getCookie: function (name) {
+    try {
+      var nameEQ = name + "=";
+      var ca = document.cookie.split(";");
+      for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == " ") c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    } catch (error) {
+      if (globalVariables.sessionData[name]) {
+        return globalVariables.sessionData[name];
+      }
 
-	$getCookie: function (name) {
-		try {
-			var nameEQ = name + "=";
-			var ca = document.cookie.split(';');
-			for (var i = 0; i < ca.length; i++) {
-				var c = ca[i];
-				while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-				if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-			}
-			return null;
-		} catch (error) {
-			if (globalVariables.sessionData[name]) {
-				return globalVariables.sessionData[name];
-			}
+      return null;
+    }
+  },
 
-			return null;;
-		}
-	},
+  $windowReady: function (callback) {
+    // in case the document is already rendered
+    if (document.readyState != "loading") callback();
+    // modern browsers
+    else if (document.addEventListener)
+      document.addEventListener("DOMContentLoaded", callback);
+    // IE <= 8
+    else
+      document.attachEvent("onreadystatechange", function () {
+        if (document.readyState == "complete") callback();
+      });
+  },
 
-	$windowReady: function (callback) {
-		// in case the document is already rendered
-		if (document.readyState != 'loading') callback();
-		// modern browsers
-		else if (document.addEventListener) document.addEventListener('DOMContentLoaded', callback);
-		// IE <= 8
-		else document.attachEvent('onreadystatechange', function () {
-			if (document.readyState == 'complete') callback();
-		});
-	},
+  $parseTagsOnLoad: function () {
+    if (window.addEventListener) {
+      window.addEventListener("message", listenIframe, false);
+    } else if (window.attachEvent) {
+      window.attachEvent("onmessage", listenIframe);
+    }
+  },
 
-	$parseTagsOnLoad: function () {
+  $displayWebRTC: function (widget, id, elementID) {
+    elementID = id + ":" + Math.floor(Math.random() * 100 + 1);
 
-		if (window.addEventListener) {
-			window.addEventListener('message', listenIframe, false);
+    var url =
+      "https://widgets.bingewave.com/webrtc/" + id + "?elementid=" + elementID;
 
-		} else if (window.attachEvent) {
-			window.attachEvent('onmessage', listenIframe);
-		}
+    var ifrm = document.createElement("IFRAME");
+    ifrm.setAttribute("allowfullscreen", "true");
+    ifrm.setAttribute("webkitallowfullscreen", "true");
+    ifrm.setAttribute("mozallowfullscreen", "true");
+    ifrm.setAttribute("allow", "camera *;microphone *");
+    ifrm.setAttribute("width", "100%");
+    renderIframe(widget, id, ifrm, elementID, 0, url);
+  },
 
-	},
+  $parseTags: function () {
+    //Get bw:widget elements
+    var elements = document.getElementsByTagName("bw:widget");
 
-	$displayWebRTC: function (widget, id, elementID) {
+    for (var i = 0; i < elements.length; i++) {
+      var widget = elements[i];
+      var id = widget.getAttribute("id");
+      var object_id = widget.getAttribute("oid");
+      displayWebRTC(widget, id, object_id);
+    }
+  },
 
-		elementID = id + ':' + Math.floor((Math.random() * 100) + 1);
+  $refreshPage: function () {
+    location.reload();
+  },
 
-		var url = "https://widgets.bingewave.com/webrtc/" + id + "?elementid=" + elementID;
+  $setCookie: function (name, value, days) {
+    try {
+      var expires = "";
+      if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+        expires = "; expires=" + date.toUTCString();
+      }
+      document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    } catch (error) {
+      globalVariables.sessionData[name] = value;
+    }
+  },
 
-		var ifrm = document.createElement("IFRAME");
-		ifrm.setAttribute("allowfullscreen", "true");
-		ifrm.setAttribute("webkitallowfullscreen", "true");
-		ifrm.setAttribute("mozallowfullscreen", "true");
-		ifrm.setAttribute("allow", "camera *;microphone *");
-		ifrm.setAttribute("width", "100%");
-		renderIframe(widget, id, ifrm, elementID, 0, url);
-	},
+  $listenIframe: function (event) {
+    if (
+      !(
+        event.origin + "/" == "https://widgets.bingewave.com/" ||
+        event.origin + "/" == "https://www.bingewave.com/" ||
+        event.origin + "/" == "http://iframe.bingewave.local/"
+      )
+    ) {
+      //return;
+    }
 
-	$parseTags: function () {
-		//Get bw:widget elements
-		var elements = document.getElementsByTagName("bw:widget");
+    if (
+      event.data &&
+      (typeof event.data === "string" || event.data instanceof String)
+    ) {
+      try {
+        var data = JSON.parse(event.data);
 
-		for (var i = 0; i < elements.length; i++) {
-			var widget = elements[i];
-			var id = widget.getAttribute("id");
+        if (data.command && data.command == "require_login") {
+          globalVariables.token = data.token;
+        } else if (data.command && data.command == "set_auth_token") {
+          globalVariables.token = data.token;
+          setCookie("bw_auth_token", globalVariables.token);
+        } else if (data.command && data.command == "refresh_page") {
+          refreshPage();
+        } else if (data.elementid) {
+          var iFrameID = document.getElementById(
+            data.elementid.replace(":80", "")
+          );
+          if (iFrameID && data.height && data.height > 0) {
+            iFrameID.style.height = parseInt(data.height) + "px";
+            iFrameID.height = parseInt(data.height);
+          }
+        }
+      } catch (error) {
+        console.log("Catch Error");
+        console.log(error);
+      }
+    }
+  },
 
-			var object_id = widget.getAttribute("oid");
-			displayWebRTC(widget, id, object_id);
+  $renderIframe: function (widget, id, ifrm, elementID, defaultHeight, url) {
+    var type = widget.getAttribute("type");
+    var environment = widget.getAttribute("env");
+    var uniqueTypeID = id + "-" + type + "-iframe";
 
-		}//end for
-	},
+    if (environment) {
+      url = updateQueryStringParameter(url, "env", environment);
+    }
 
-	$refreshPage: function () {
-		location.reload();
-	},
+    var frameExist = document.getElementById(uniqueTypeID);
 
-	$setCookie: function (name, value, days) {
+    if (!frameExist) {
+      if (globalVariables.token) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url);
+        xhr.onreadystatechange = function () {
+          if (this.readyState === this.DONE) {
+            if (this.status === 200) {
+              var data_url = URL.createObjectURL(this.response);
+              ifrm.setAttribute("src", data_url);
+            } else {
+              console.log(type);
+              console.log(url);
+              console.error("Unable To Set IFrame SRC");
+            }
+          }
+        };
+        xhr.responseType = "blob";
+        xhr.setRequestHeader("Authorization", globalVariables.token);
+        xhr.send();
+      } else {
+        console.log("Token Not Exist");
+        ifrm.setAttribute("src", url);
+      }
+      ifrm.style.width = "100%";
 
-		try {
-			var expires = "";
-			if (days) {
-				var date = new Date();
-				date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-				expires = "; expires=" + date.toUTCString();
-			}
-			document.cookie = name + "=" + (value || "") + expires + "; path=/";
-		} catch (error) {
-			globalVariables.sessionData[name] = value;
-		}
-	},
+      if (defaultHeight) {
+        ifrm.style.height = defaultHeight + "px";
+      }
 
-	$listenIframe: function (event) {
+      ifrm.scrolling = "no";
+      ifrm.frameBorder = 0;
+      ifrm.setAttribute("onload", "scroll(0,0)");
+      ifrm.id = elementID;
 
-		if (!(event.origin + '/' == 'https://widgets.bingewave.com/' || event.origin + '/' == 'https://www.bingewave.com/' || event.origin + '/' == 'http://iframe.bingewave.local/')) {
-			//return;
-		}
+      var placeholderFrame = document.createElement("span");
+      placeholderFrame.id = uniqueTypeID;
 
-		if (event.data && (typeof event.data === 'string' || event.data instanceof String)) {
+      widget.appendChild(ifrm);
+      widget.appendChild(placeholderFrame);
 
-			try {
-				var data = JSON.parse(event.data);
+      globalVariables.frames.push(ifrm);
+    }
+  },
 
-				if (data.command && data.command == 'require_login') {
-					globalVariables.token = data.token;
+  $updateQueryStringParameter: function (uri, key, value) {
+    var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+    var separator = uri.indexOf("?") !== -1 ? "&" : "?";
+    if (uri.match(re)) {
+      return uri.replace(re, "$1" + key + "=" + value + "$2");
+    } else {
+      return uri + separator + key + "=" + value;
+    }
+  },
 
-				} else if (data.command && data.command == 'set_auth_token') {
-					globalVariables.token = data.token;
-					setCookie('bw_auth_token', globalVariables.token);
+  init: function (data) {
+    if (typeof data === "object" && data !== null) {
+      if (data["auth_token"]) {
+        globalVariables.token = data["auth_token"];
+        this.token = data["auth_token"];
+      }
+    }
 
-				} else if (data.command && data.command == 'refresh_page') {
-					refreshPage();
+    if (!globalVariables.token) {
+      var tmpToken = getCookie("bw_auth_token");
+      if (tmpToken) {
+        globalVariables.token = tmpToken;
+      }
+    }
 
-				} else if (data.elementid) {
-					var iFrameID = document.getElementById(data.elementid.replace(":80", ""));
-
-					if (iFrameID && data.height && data.height > 0) {
-						iFrameID.style.height = parseInt(data.height) + "px";
-						iFrameID.height = parseInt(data.height);
-					}
-				}
-			} catch (error) {
-				console.log("Catch Error");
-				console.log(error);
-			}
-		}
-	},
-
-	$renderIframe: function (widget, id, ifrm, elementID, defaultHeight, url) {
-
-		var type = widget.getAttribute("type");
-		var environment = widget.getAttribute("env");
-		var uniqueTypeID = id + '-' + type + '-iframe';
-
-		if (environment) {
-			url = updateQueryStringParameter(url, 'env', environment)
-		}
-
-		var frameExist = document.getElementById(uniqueTypeID);
-
-		if (!frameExist) {
-			if (globalVariables.token) {
-				var xhr = new XMLHttpRequest();
-
-				xhr.open('GET', url);
-				xhr.onreadystatechange = function () {
-					if (this.readyState === this.DONE) {
-						if (this.status === 200) {
-								var data_url = URL.createObjectURL(this.response);
-								ifrm.setAttribute("src", data_url);
-						} else {
-							console.log(type);
-							console.log(url);
-							console.error('Unable To Set IFrame SRC');
-						}
-					}
-				};
-
-				xhr.responseType = 'blob';
-				xhr.setRequestHeader('Authorization', globalVariables.token);
-				xhr.send();
-
-			} else {
-				console.log("Token Not Exist");
-				ifrm.setAttribute("src", url);
-			}
-			ifrm.style.width = "100%";
-
-			if (defaultHeight) {
-				ifrm.style.height = defaultHeight + "px";
-			}
-
-			ifrm.scrolling = "no";
-			ifrm.frameBorder = 0;
-			ifrm.setAttribute("onload", "scroll(0,0)");
-			ifrm.id = elementID;
-			var placeholderFrame = document.createElement('span');
-			placeholderFrame.id = uniqueTypeID;
-
-			widget.appendChild(ifrm);
-			widget.appendChild(placeholderFrame);
-
-			globalVariables.frames.push(ifrm);
-		}
-	},
-
-	$updateQueryStringParameter: function (uri, key, value) {
-		var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-		var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-		if (uri.match(re)) {
-			return uri.replace(re, '$1' + key + "=" + value + '$2');
-		}
-		else {
-			return uri + separator + key + "=" + value;
-		}
-	},
-
-	init: function (data) {
-
-		if (typeof data === 'object' && data !== null) {
-			if (data['auth_token']) {
-				globalVariables.token = data['auth_token'];
-				this.token = data['auth_token'];
-			}
-		}
-
-		if (!globalVariables.token) {
-
-			var tmpToken = getCookie('bw_auth_token');
-
-			if (tmpToken) {
-				globalVariables.token = tmpToken;
-			}
-		}
-
-		windowReady(function () {
-			initCookie();
-			parseTagsOnLoad();
-			parseTags();
-		});
-	},
-
+    windowReady(function () {
+      initCookie();
+      parseTagsOnLoad();
+      parseTags();
+    });
+  },
 };
 
-autoAddDeps(BingewaveConnector, '$globalVariables');
-autoAddDeps(BingewaveConnector, '$initCookie');
-// autoAddDeps(BingewaveConnector, '$addCssToDocument');
-// autoAddDeps(BingewaveConnector, '$createRegisterModal');
-autoAddDeps(BingewaveConnector, '$refreshPage');
-autoAddDeps(BingewaveConnector, '$setCookie');
-autoAddDeps(BingewaveConnector, '$getCookie');
-// autoAddDeps(BingewaveConnector, '$switchModals');
-autoAddDeps(BingewaveConnector, '$parseTags');
-autoAddDeps(BingewaveConnector, '$parseTagsOnLoad');
-autoAddDeps(BingewaveConnector, '$listenIframe');
-// autoAddDeps(BingewaveConnector, '$displayAd');
-// autoAddDeps(BingewaveConnector, '$displayAdGroup');
-// autoAddDeps(BingewaveConnector, '$displayAdSpace');
-// autoAddDeps(BingewaveConnector, '$displaySponsoredContent');
-// autoAddDeps(BingewaveConnector, '$displayWatchView');
-// autoAddDeps(BingewaveConnector, '$displayStream');
-// autoAddDeps(BingewaveConnector, '$displayBroadcast');
-// autoAddDeps(BingewaveConnector, '$displayStreamAndBroadcast');
-// autoAddDeps(BingewaveConnector, '$displayEventTicket');
-// autoAddDeps(BingewaveConnector, '$displayChat');
-// autoAddDeps(BingewaveConnector, '$displayOnlineUsers');
-autoAddDeps(BingewaveConnector, '$displayWebRTC');
-// autoAddDeps(BingewaveConnector, '$displayWebRtcClassroom');
-// autoAddDeps(BingewaveConnector, '$displayNotepad');
-// autoAddDeps(BingewaveConnector, '$displayEventJoin');
-// autoAddDeps(BingewaveConnector, '$displayEventPopup');
-// autoAddDeps(BingewaveConnector, '$displayMessenging');
-// autoAddDeps(BingewaveConnector, '$displayConferenceTickets');
-// autoAddDeps(BingewaveConnector, '$displayVoting');
-// autoAddDeps(BingewaveConnector, '$displayEventPayWall');
-// autoAddDeps(BingewaveConnector, '$displayLiveProducts');
-// autoAddDeps(BingewaveConnector, '$displayProducts');
-// autoAddDeps(BingewaveConnector, '$displayNeedsFrame');
-// autoAddDeps(BingewaveConnector, '$displayNeedsFeedFrame');
-// autoAddDeps(BingewaveConnector, '$displayOpportunitiesFrame');
-// autoAddDeps(BingewaveConnector, '$displayOpportunitiesFeedFrame');
-// autoAddDeps(BingewaveConnector, '$displayPromotionsFrame');
-// autoAddDeps(BingewaveConnector, '$displayPromotionsFeedFrame');
-// autoAddDeps(BingewaveConnector, '$displayManagePromotionsFrame');
-// autoAddDeps(BingewaveConnector, '$displayCollaborationFrame');
-// autoAddDeps(BingewaveConnector, '$displayVideosPlayList');
-// autoAddDeps(BingewaveConnector, '$displayPodcast');
-autoAddDeps(BingewaveConnector, '$renderIframe');
-autoAddDeps(BingewaveConnector, '$windowReady');
-autoAddDeps(BingewaveConnector, '$updateQueryStringParameter');
+autoAddDeps(BingewaveConnector, "$globalVariables");
+autoAddDeps(BingewaveConnector, "$initCookie");
+autoAddDeps(BingewaveConnector, "$refreshPage");
+autoAddDeps(BingewaveConnector, "$setCookie");
+autoAddDeps(BingewaveConnector, "$getCookie");
+autoAddDeps(BingewaveConnector, "$parseTags");
+autoAddDeps(BingewaveConnector, "$parseTagsOnLoad");
+autoAddDeps(BingewaveConnector, "$listenIframe");
+autoAddDeps(BingewaveConnector, "$displayWebRTC");
+autoAddDeps(BingewaveConnector, "$renderIframe");
+autoAddDeps(BingewaveConnector, "$windowReady");
+autoAddDeps(BingewaveConnector, "$updateQueryStringParameter");
 mergeInto(LibraryManager.library, BingewaveConnector);
